@@ -24,8 +24,8 @@ departments = [
 
 # Store department data in Redis
 for department in departments:
-    dno = department['DNO']
-    r.hmset(dno,department)
+    dname = department['DNAME']
+    r.hmset(dname,department)
     
 for employee in data:
     eno = employee['ENO']
@@ -45,17 +45,26 @@ def get_data():
         return jsonify(employee_details)
     if dname:
     
-        department = r.hgetall(dname)
-        dno = department.get("DNAME")
-        if dno is None:
-            return jsonify({'error': f'Department with DNAME "{dname}" not found'}), 404
+        
+        print(dname)
+        matching_employees = []
 
-    
-        employee_details = r.hgetall(dno)
-        if not employee_details:
-            return jsonify({'error': 'Employee not found'}), 404
-        return jsonify(employee_details)    
-            
+        department = r.hgetall(dname)
+        print(department)
+        print(r.keys('employee:*'))
+        for employee_key in r.keys('employee:*'):
+            employee_data = r.hgetall(employee_key)
+            print(employee_data)
+            if employee_data.get('DNO') == department.get('DNO'):
+                
+                matching_employees.append(employee_data)
+
+        
+        if not matching_employees:
+            return jsonify({'error': f'No employees found for department "{dname}"'}), 404
+
+    return jsonify(matching_employees)    
+                
     
 
 
