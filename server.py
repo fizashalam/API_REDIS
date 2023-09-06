@@ -14,7 +14,19 @@ data = [
     {'ENO': '5', 'ENAME': 'Bimal', 'DNO': '20', 'SALARY': '40000'},
     {'ENO': '6', 'ENAME': 'Parimal', 'DNO': '10', 'SALARY': '20000'}
 ]
+departments = [
+    {'DNO': '10', 'DNAME': 'Admin'},
+    {'DNO': '20', 'DNAME': 'Accounts'},
+    {'DNO': '30', 'DNAME': 'Sales'},
+    {'DNO': '40', 'DNAME': 'Marketing'},
+    {'DNO': '50', 'DNAME': 'Purchasing'},
+]
 
+# Store department data in Redis
+for department in departments:
+    dno = department['DNO']
+    r.hmset(dno,department)
+    
 for employee in data:
     eno = employee['ENO']
     r.hmset(eno,employee)
@@ -22,14 +34,30 @@ for employee in data:
 
 @app.route('/api', methods=['GET'])
 def get_data():
-    eno= request.args.get('ENO')  
+    eno= request.args.get('ENO') 
+    dname = request.args.get('DNAME')
+    if not dname and not eno:
+        return jsonify({'error': 'key not found'}), 400   
     if eno:
         employee_details = r.hgetall(eno)
         if not employee_details:
             return jsonify({'error': 'Employee not found'}), 404
         return jsonify(employee_details)
-    else:
-        return jsonify({'error': 'key not found'}), 400
+    if dname:
     
+        department = r.hgetall(dname)
+        dno = department.get("DNAME")
+        if dno is None:
+            return jsonify({'error': f'Department with DNAME "{dname}" not found'}), 404
+
+    
+        employee_details = r.hgetall(dno)
+        if not employee_details:
+            return jsonify({'error': 'Employee not found'}), 404
+        return jsonify(employee_details)    
+            
+    
+
+
 if __name__ == '__main__':
     app.run(debug=True)
